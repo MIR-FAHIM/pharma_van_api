@@ -10,6 +10,7 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Cart;
 use App\Models\Transaction;
+use App\Models\Review;
 use Carbon\Carbon;
 
 class ReportController extends Controller
@@ -253,6 +254,51 @@ class ReportController extends Controller
             ];
 
             return $this->success('Monthly order report fetched', $data);
+        } catch (\Throwable $e) {
+            return $this->failed('Something went wrong', ['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * GET /reports/today
+     * Returns today's activity summary
+     */
+    public function todayReport(Request $request)
+    {
+        try {
+            $today = Carbon::today()->toDateString();
+
+            $totalOrders = Order::whereDate('created_at', $today)->count();
+            $totalRegistered = User::whereDate('created_at', $today)->count();
+            $totalReview = Review::whereDate('created_at', $today)->count();
+
+            $totalEarn = (float) Transaction::where('trx_type', 'credit')
+                ->where('status', 'completed')
+                ->whereDate('created_at', $today)
+                ->sum('amount');
+
+            $totalDelivered = Order::where('status', 'delivered')
+                ->whereDate('created_at', $today)
+                ->count();
+
+            $sellerOnboard = User::whereIn('user_type', ['seller', 'vendor'])
+                ->whereDate('created_at', $today)
+                ->count();
+
+            $data = [
+                'date' => $today,
+                'total_orders' => $totalOrders,
+                'total_registered' => $totalRegistered,
+                'website_visitors' => 0,
+                'cart_clicked' => 0,
+                'product_clicked' => 0,
+                'total_review' => $totalReview,
+                'total_earn' => $totalEarn,
+                'total_delivered' => $totalDelivered,
+                'seller_onboard' => $sellerOnboard,
+            ];
+
+            return $this->success('Today report fetched', $data);
         } catch (\Throwable $e) {
             return $this->failed('Something went wrong', ['error' => $e->getMessage()], 500);
         }

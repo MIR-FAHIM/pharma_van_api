@@ -220,6 +220,7 @@ Route::prefix('reports')->group(function () {
     Route::get('/shop/{userId}', [ReportController::class, 'shopReportByUser']);
     Route::get('/shop/sales/{shopId}', [ReportController::class, 'shopSalesReport']);
     Route::get('/orders/monthly', [ReportController::class, 'orderReportMonthly']);
+    Route::get('/today', [ReportController::class, 'todayReport']);
 });
 
 Route::prefix('product-discounts')->group(function () {
