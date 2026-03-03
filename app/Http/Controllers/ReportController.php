@@ -192,4 +192,69 @@ class ReportController extends Controller
             return $this->failed('Something went wrong', ['error' => $e->getMessage()], 500);
         }
     }
+
+    /**
+     * GET /reports/orders/monthly
+     * Params: start_month (YYYY-MM), end_month (YYYY-MM), status, payment_status, user_id
+     */
+    public function orderReportMonthly(Request $request)
+    {
+        try {
+            $end = $request->filled('end_month')
+                ? Carbon::createFromFormat('Y-m', $request->end_month)->endOfMonth()
+                : Carbon::now()->endOfMonth();
+
+            $start = $request->filled('start_month')
+                ? Carbon::createFromFormat('Y-m', $request->start_month)->startOfMonth()
+                : $end->copy()->subMonths(11)->startOfMonth();
+
+            if ($start->gt($end)) {
+                return $this->failed('Invalid date range', ['start_month' => 'start_month must be before end_month'], 422);
+            }
+
+            $query = Order::query();
+
+            if ($request->filled('status')) {
+                $query->where('status', $request->status);
+            }
+
+            if ($request->filled('payment_status')) {
+                $query->where('payment_status', $request->payment_status);
+            }
+
+            if ($request->filled('user_id')) {
+                $query->where('user_id', $request->user_id);
+            }
+
+            $monthlyTotals = $query->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as ym, COUNT(*) as order_count, SUM(total) as total_amount")
+                ->whereBetween('created_at', [$start, $end])
+                ->groupBy('ym')
+                ->orderBy('ym')
+                ->get()
+                ->keyBy('ym');
+
+            $months = [];
+            $cursor = $start->copy();
+            while ($cursor <= $end) {
+                $key = $cursor->format('Y-m');
+                $row = $monthlyTotals->get($key);
+                $months[] = [
+                    'month' => $key,
+                    'orders' => (int) ($row->order_count ?? 0),
+                    'amount' => (float) ($row->total_amount ?? 0),
+                ];
+                $cursor->addMonth();
+            }
+
+            $data = [
+                'start_month' => $start->format('Y-m'),
+                'end_month' => $end->format('Y-m'),
+                'months' => $months,
+            ];
+
+            return $this->success('Monthly order report fetched', $data);
+        } catch (\Throwable $e) {
+            return $this->failed('Something went wrong', ['error' => $e->getMessage()], 500);
+        }
+    }
 }
