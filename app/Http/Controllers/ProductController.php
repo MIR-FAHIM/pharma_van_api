@@ -503,6 +503,83 @@ class ProductController extends Controller
     }
 
     /**
+     * GET /products/list/stock-out
+     * Filters: shop_id, user_id, category_id, sub_category_id, brand_id, status, is_active, search
+     */
+    public function listStockOutProducts(Request $request)
+    {
+        try {
+            $query = Product::query()->with(['primaryImage', 'images', 'category', 'subCategory', 'brand', 'productDiscount', 'averageReview']);
+
+            if ($request->filled('shop_id')) {
+                $query->where('shop_id', $request->shop_id);
+            }
+
+            if ($request->filled('user_id')) {
+                $query->where('user_id', $request->user_id);
+            }
+
+            if ($request->filled('category_id')) {
+                $categoryId = (int) $request->category_id;
+                $query->where(function ($q) use ($categoryId) {
+                    $q->where('category_id', $categoryId)
+                        ->orWhereHas('category', function ($qc) use ($categoryId) {
+                            $qc->where('parent_id', $categoryId);
+                        });
+                });
+            }
+
+            if ($request->filled('sub_category_id')) {
+                $query->where('sub_category_id', $request->sub_category_id);
+            }
+
+            if ($request->filled('brand_id')) {
+                $query->where('brand_id', $request->brand_id);
+            }
+
+            if ($request->filled('status')) {
+                $query->where('status', $request->status);
+            }
+
+            if ($request->filled('is_active')) {
+                $query->where('is_active', (int) $request->is_active);
+            }
+
+            if ($request->filled('search')) {
+                $search = trim($request->search);
+                // split into tokens so multi-word searches behave well
+                $tokens = preg_split('/\s+/', $search);
+
+                $query->where(function ($q) use ($tokens) {
+                    foreach ($tokens as $token) {
+                        $t = "%" . $token . "%";
+                        $q->where(function ($qq) use ($t) {
+                            $qq->where('name', 'like', $t)
+                                ->orWhere('slug', 'like', $t)
+                                ->orWhereHas('category', function ($qc) use ($t) {
+                                    $qc->where('name', 'like', $t);
+                                })
+                                ->orWhereHas('brand', function ($qc) use ($t) {
+                                    $qc->where('name', 'like', $t);
+                                });
+                        });
+                    }
+                });
+            }
+
+            $perPage = (int) $request->get('per_page', 20);
+            $products = $query->where('approved', 1)
+                ->where('current_stock', 0)
+                ->latest()
+                ->paginate($perPage);
+
+            return $this->success('Stock-out products fetched successfully', $products, 200,);
+        } catch (\Throwable $e) {
+            return $this->failed('Something went wrong', ['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
      * GET /products/details/{id}
      */
     public function getProductDetails($id)

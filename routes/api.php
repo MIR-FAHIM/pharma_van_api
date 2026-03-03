@@ -4,6 +4,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\BrandController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\ProductImageController;
 use App\Http\Controllers\ShopController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\OrderController;
@@ -75,10 +76,12 @@ Route::prefix('brands')->group(function () {
 Route::prefix('products')->group(function () {
     Route::post('/create', [ProductController::class, 'createProduct']);
     Route::post('/images/upload/{productId}', [ProductController::class, 'productImageUpload']);
+    Route::get('/images/{productId}', [ProductImageController::class, 'getProductImages'])->withoutMiddleware('token');
     Route::get('/list', [ProductController::class, 'listProducts'])->withoutMiddleware('token');;
     Route::get('/category/wise', [ProductController::class, 'listCategoryProducts'])->withoutMiddleware('token');;
     Route::get('/list/featured', [ProductController::class, 'listFeaturedProducts'])->withoutMiddleware('token');;
     Route::get('/list/today-deal', [ProductController::class, 'listTodayDealProducts'])->withoutMiddleware('token');;
+    Route::get('/list/stock-out', [ProductController::class, 'listStockOutProducts'])->withoutMiddleware('token');
     Route::get('/details/{id}', [ProductController::class, 'getProductDetails'])->withoutMiddleware('token');;
     Route::post('/update/{id}', [ProductController::class, 'updateProduct']);
     Route::delete('/delete/{id}', [ProductController::class, 'deleteProduct']);
