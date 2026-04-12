@@ -95,7 +95,7 @@ class Product extends Model
     }
     public function shop()
     {
-        return $this->belongsTo(User::class, 'user_id');
+        return $this->belongsTo(Shops::class, 'shop_id');
     }
 
     public function images()
