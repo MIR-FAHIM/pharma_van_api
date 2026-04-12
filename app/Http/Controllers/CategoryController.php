@@ -82,6 +82,7 @@ class CategoryController extends Controller
             $query = Category::query()
             ->with('banner')
                 ->where('parent_id', 0)
+                ->where('is_active', 1)
                 ->where('featured', 1);
 
             $perPage = (int) $request->get('per_page', 20);
@@ -194,7 +195,8 @@ class CategoryController extends Controller
                 return $this->failed('Category not found', null, 404);
             }
 
-            $children = Category::where('parent_id', $id)
+            $children = Category::where('parent_id', $id)->where('is_active', 1)
+                 ->with('banner')
                 ->orderByRaw('COALESCE(order_level, 999999) asc')
                 ->latest()
                 ->get();
@@ -212,7 +214,7 @@ class CategoryController extends Controller
     public function getCategoryWithAllChildren()
     {
         try {
-            $categories = Category::with('banner')
+            $categories = Category::with('banner')->where('is_active', 1)
                 ->orderByRaw('COALESCE(order_level, 999999) asc')
                 ->get();
 
