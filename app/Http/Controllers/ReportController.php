@@ -284,6 +284,9 @@ class ReportController extends Controller
             $sellerOnboard = User::whereIn('user_type', ['seller', 'vendor'])
                 ->whereDate('created_at', $today)
                 ->count();
+            $customerOnboard = User::whereIn('user_type', ['customer', 'user'])
+                ->whereDate('created_at', $today)
+                ->count();
 
             $data = [
                 'date' => $today,
@@ -296,6 +299,7 @@ class ReportController extends Controller
                 'total_earn' => $totalEarn,
                 'total_delivered' => $totalDelivered,
                 'seller_onboard' => $sellerOnboard,
+                'customer_onboard' => $customerOnboard,
             ];
 
             return $this->success('Today report fetched', $data);
