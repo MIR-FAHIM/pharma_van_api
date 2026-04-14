@@ -17,6 +17,7 @@ class Category extends Model
         'level',
         'name',
         'order_level',
+        'is_active',
         'commision_rate',
         'banner',
         'icon',

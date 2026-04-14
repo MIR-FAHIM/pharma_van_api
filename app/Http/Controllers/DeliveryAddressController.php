@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\District;
+use App\Models\Division;
 use App\Models\DeliveryAddress;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -20,6 +22,7 @@ class DeliveryAddressController extends Controller
                 'mobile'  => 'required|string|max:20',
                 'address' => 'required|string',
                 'district'=> 'required|string|max:255',
+                'division'=> 'required|string|max:255',
                 'area'    => 'required|string|max:255',
                 'house'   => 'nullable|string|max:255',
                 'flat'    => 'nullable|string|max:255',
@@ -47,7 +50,7 @@ class DeliveryAddressController extends Controller
     public function getAddressByUser($userId)
     {
         try {
-            $addresses = DeliveryAddress::where('user_id', $userId)->get();
+            $addresses = DeliveryAddress::where('user_id', $userId)->with(['district', 'division'])->get();
 
             return $this->success('Addresses retrieved', $addresses);
         } catch (\Exception $e) {
@@ -134,6 +137,34 @@ class DeliveryAddressController extends Controller
         }
     }
 
+    /**
+     * Get all divisions
+     */
+    public function getDivisions()
+    {
+        try {
+            $divisions = Division::all();
+
+            return $this->success('Divisions retrieved', $divisions);
+        } catch (\Exception $e) {
+            return $this->failed('Could not retrieve divisions', $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Get districts by division
+     */
+    public function getDistrictsByDivision($divisionId)
+    {
+        try {
+            $districts = District::where('division_id', $divisionId)->get();
+
+            return $this->success('Districts retrieved', $districts);
+        } catch (\Exception $e) {
+            return $this->failed('Could not retrieve districts', $e->getMessage(), 500);
+        }
+    }
+
     // Response helpers
     private function success($message, $data = null, int $code = 200)
     {
@@ -153,3 +184,5 @@ class DeliveryAddressController extends Controller
         ], $code);
     }
 }
+
+

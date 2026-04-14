@@ -39,7 +39,7 @@ class UserController extends Controller
                 'password' => ['required', 'string', 'min:6'],
                 'role' => ['nullable', Rule::in(['admin', 'vendor', 'customer'])],
 
-                'mobile' => ['nullable', 'string', 'max:50'],
+                'phone' => ['nullable', 'string', 'max:50'],
                 'optional_phone' => ['nullable', 'string', 'max:50'],
                 'address' => ['nullable', 'string', 'max:1000'],
                 'fcm_token' => ['nullable', 'string', 'max:500'],
@@ -59,7 +59,7 @@ class UserController extends Controller
                 'password' => Hash::make($validated['password']),
                 'role' => $validated['role'] ?? 'customer',
 
-                'mobile' => $validated['mobile'] ?? null,
+                'phone' => $validated['phone'] ?? null,
                 'optional_phone' => $validated['optional_phone'] ?? null,
                 'address' => $validated['address'] ?? null,
                 'fcm_token' => $validated['fcm_token'] ?? null,
@@ -118,7 +118,7 @@ class UserController extends Controller
     {
         try {
             $perPage = (int) ($request->get('per_page', 20));
-            $customers = User::where('role', 'customer')->latest()->paginate($perPage);
+            $customers = User::where('user_type', 'customer')->latest()->paginate($perPage);
 
             return $this->success('Customers fetched successfully', $customers);
         } catch (\Throwable $e) {

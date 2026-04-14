@@ -7,8 +7,10 @@ use App\Models\Product;
 use App\Models\Shops;
 use App\Models\User;
 use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\Cart;
 use App\Models\Transaction;
+use App\Models\Review;
 use Carbon\Carbon;
 
 class ReportController extends Controller
@@ -98,6 +100,209 @@ class ReportController extends Controller
             ];
 
             return $this->success('Dashboard metrics fetched', $data);
+        } catch (\Throwable $e) {
+            return $this->failed('Something went wrong', ['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * GET /reports/shop/{userId}
+     * Returns shop metrics for a vendor user
+     */
+    public function shopReportByUser($userId)
+    {
+        try {
+            $shopIds = Shops::where('user_id', $userId)->pluck('id');
+
+            if ($shopIds->isEmpty()) {
+                $data = [
+                    'shops_count' => 0,
+                    'orders_count' => 0,
+                    'orders_amount' => 0,
+                    'products_count' => 0,
+                ];
+
+                return $this->success('Shop report fetched', $data);
+            }
+
+            $shopsCount = $shopIds->count();
+            $ordersCount = OrderItem::whereIn('shop_id', $shopIds)
+                ->distinct('order_id')
+                ->count('order_id');
+
+            $ordersAmount = (float) OrderItem::whereIn('shop_id', $shopIds)
+                ->sum('line_total');
+
+            $productsCount = Product::whereIn('shop_id', $shopIds)->count();
+
+            $data = [
+                'shops_count' => $shopsCount,
+                'orders_count' => $ordersCount,
+                'orders_amount' => $ordersAmount,
+                'products_count' => $productsCount,
+            ];
+
+            return $this->success('Shop report fetched', $data);
+        } catch (\Throwable $e) {
+            return $this->failed('Something went wrong', ['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * GET /reports/shop/{shopId}/sales
+     * Returns last 12 months sales totals for a shop
+     */
+    public function shopSalesReport($shopId, Request $request)
+    {
+        try {
+            $shop = Shops::find($shopId);
+            if (!$shop) {
+                return $this->failed('Shop not found', null, 404);
+            }
+
+            $end = Carbon::now()->endOfMonth();
+            $start = $end->copy()->subMonths(11)->startOfMonth();
+
+            $monthlyTotals = OrderItem::selectRaw("DATE_FORMAT(created_at, '%Y-%m') as ym, SUM(line_total) as total")
+                ->where('shop_id', $shopId)
+                ->whereBetween('created_at', [$start, $end])
+                ->groupBy('ym')
+                ->orderBy('ym')
+                ->pluck('total', 'ym');
+
+            $months = [];
+            $cursor = $start->copy();
+            while ($cursor <= $end) {
+                $key = $cursor->format('Y-m');
+                $months[] = [
+                    'month' => $key,
+                    'amount' => (float) ($monthlyTotals[$key] ?? 0),
+                ];
+                $cursor->addMonth();
+            }
+
+            $data = [
+                'shop_id' => (int) $shopId,
+                'start_month' => $start->format('Y-m'),
+                'end_month' => $end->format('Y-m'),
+                'months' => $months,
+            ];
+
+            return $this->success('Shop sales report fetched', $data);
+        } catch (\Throwable $e) {
+            return $this->failed('Something went wrong', ['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * GET /reports/orders/monthly
+     * Params: start_month (YYYY-MM), end_month (YYYY-MM), status, payment_status, user_id
+     */
+    public function orderReportMonthly(Request $request)
+    {
+        try {
+            $end = $request->filled('end_month')
+                ? Carbon::createFromFormat('Y-m', $request->end_month)->endOfMonth()
+                : Carbon::now()->endOfMonth();
+
+            $start = $request->filled('start_month')
+                ? Carbon::createFromFormat('Y-m', $request->start_month)->startOfMonth()
+                : $end->copy()->subMonths(11)->startOfMonth();
+
+            if ($start->gt($end)) {
+                return $this->failed('Invalid date range', ['start_month' => 'start_month must be before end_month'], 422);
+            }
+
+            $query = Order::query();
+
+            if ($request->filled('status')) {
+                $query->where('status', $request->status);
+            }
+
+            if ($request->filled('payment_status')) {
+                $query->where('payment_status', $request->payment_status);
+            }
+
+            if ($request->filled('user_id')) {
+                $query->where('user_id', $request->user_id);
+            }
+
+            $monthlyTotals = $query->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as ym, COUNT(*) as order_count, SUM(total) as total_amount")
+                ->whereBetween('created_at', [$start, $end])
+                ->groupBy('ym')
+                ->orderBy('ym')
+                ->get()
+                ->keyBy('ym');
+
+            $months = [];
+            $cursor = $start->copy();
+            while ($cursor <= $end) {
+                $key = $cursor->format('Y-m');
+                $row = $monthlyTotals->get($key);
+                $months[] = [
+                    'month' => $key,
+                    'orders' => (int) ($row->order_count ?? 0),
+                    'amount' => (float) ($row->total_amount ?? 0),
+                ];
+                $cursor->addMonth();
+            }
+
+            $data = [
+                'start_month' => $start->format('Y-m'),
+                'end_month' => $end->format('Y-m'),
+                'months' => $months,
+            ];
+
+            return $this->success('Monthly order report fetched', $data);
+        } catch (\Throwable $e) {
+            return $this->failed('Something went wrong', ['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * GET /reports/today
+     * Returns today's activity summary
+     */
+    public function todayReport(Request $request)
+    {
+        try {
+            $today = Carbon::today()->toDateString();
+
+            $totalOrders = Order::whereDate('created_at', $today)->count();
+            $totalRegistered = User::whereDate('created_at', $today)->count();
+            $totalReview = Review::whereDate('created_at', $today)->count();
+
+            $totalEarn = (float) Transaction::where('trx_type', 'credit')
+                ->where('status', 'completed')
+                ->whereDate('created_at', $today)
+                ->sum('amount');
+
+            $totalDelivered = Order::where('status', 'delivered')
+                ->whereDate('created_at', $today)
+                ->count();
+
+            $sellerOnboard = User::whereIn('user_type', ['seller', 'vendor'])
+                ->whereDate('created_at', $today)
+                ->count();
+            $customerOnboard = User::whereIn('user_type', ['customer', 'user'])
+                ->whereDate('created_at', $today)
+                ->count();
+
+            $data = [
+                'date' => $today,
+                'total_orders' => $totalOrders,
+                'total_registered' => $totalRegistered,
+                'website_visitors' => 0,
+                'cart_clicked' => 0,
+                'product_clicked' => 0,
+                'total_review' => $totalReview,
+                'total_earn' => $totalEarn,
+                'total_delivered' => $totalDelivered,
+                'seller_onboard' => $sellerOnboard,
+                'customer_onboard' => $customerOnboard,
+            ];
+
+            return $this->success('Today report fetched', $data);
         } catch (\Throwable $e) {
             return $this->failed('Something went wrong', ['error' => $e->getMessage()], 500);
         }

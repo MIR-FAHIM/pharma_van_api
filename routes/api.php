@@ -4,6 +4,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\BrandController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\ProductImageController;
 use App\Http\Controllers\ShopController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\OrderController;
@@ -22,13 +23,17 @@ use App\Http\Controllers\RelatedProductController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\DeliveryController;
 use App\Http\Controllers\TransactionController;
+use App\Http\Controllers\WebsiteSettingController;
+use App\Http\Controllers\ShippingCostController;
+use App\Http\Controllers\SMSController;
+use App\Http\Controllers\BankAccountSellerController;
 
-// Authentication endpoints
+// Authentication endpoints hlw
 Route::post('/auth/login', [AuthController::class, 'login'])->withoutMiddleware('token');
+Route::post('/auth/login-otp', [AuthController::class, 'loginWithOtp'])->withoutMiddleware('token');
 Route::post('/auth/logout', [AuthController::class, 'logout']);
 Route::get('/auth/tokens', [AuthController::class, 'listTokens']);
 Route::delete('/auth/tokens/{id}', [AuthController::class, 'revokeToken']);
-
 Route::prefix('users')->group(function () {
     Route::post('/create', [UserController::class, 'createUser'])->withoutMiddleware('token');;
 
@@ -49,7 +54,9 @@ Route::prefix('users')->group(function () {
 Route::prefix('categories')->group(function () {
     Route::post('/create', [CategoryController::class, 'createCategory']);
 
-    Route::get('/list', [CategoryController::class, 'listCategories']);
+    Route::get('/list', [CategoryController::class, 'listCategories'])->withoutMiddleware('token');
+    Route::get('/category/info', [CategoryController::class, 'getCategoryInfo'])->withoutMiddleware('token');
+    Route::get('/with-children', [CategoryController::class, 'getCategoryWithAllChildren']);
     Route::get('/details/{id}', [CategoryController::class, 'getCategoryDetails']);
     Route::get('/children/{id}', [CategoryController::class, 'getCategoryChildren']);
 
@@ -60,23 +67,22 @@ Route::prefix('categories')->group(function () {
 
 Route::prefix('brands')->group(function () {
     Route::post('/create', [BrandController::class, 'createBrand']);
-
     Route::get('/list', [BrandController::class, 'listBrands']);
     Route::get('/details/{id}', [BrandController::class, 'getBrandDetails']);
-
     Route::put('/update/{id}', [BrandController::class, 'updateBrand']);
-
     Route::delete('/delete/{id}', [BrandController::class, 'deleteBrand']);
 });
 
 Route::prefix('products')->group(function () {
     Route::post('/create', [ProductController::class, 'createProduct']);
     Route::post('/images/upload/{productId}', [ProductController::class, 'productImageUpload']);
-
-    Route::get('/list', [ProductController::class, 'listProducts']);
-    Route::get('/list/featured', [ProductController::class, 'listFeaturedProducts']);
-    Route::get('/list/today-deal', [ProductController::class, 'listTodayDealProducts']);
-    Route::get('/details/{id}', [ProductController::class, 'getProductDetails']);
+    Route::get('/images/{productId}', [ProductImageController::class, 'getProductImages'])->withoutMiddleware('token');
+    Route::get('/list', [ProductController::class, 'listProducts'])->withoutMiddleware('token');;
+    Route::get('/category/wise', [ProductController::class, 'listCategoryProducts'])->withoutMiddleware('token');;
+    Route::get('/list/featured', [ProductController::class, 'listFeaturedProducts'])->withoutMiddleware('token');;
+    Route::get('/list/today-deal', [ProductController::class, 'listTodayDealProducts'])->withoutMiddleware('token');;
+    Route::get('/list/stock-out', [ProductController::class, 'listStockOutProducts'])->withoutMiddleware('token');
+    Route::get('/details/{id}', [ProductController::class, 'getProductDetails'])->withoutMiddleware('token');;
     Route::post('/update/{id}', [ProductController::class, 'updateProduct']);
     Route::delete('/delete/{id}', [ProductController::class, 'deleteProduct']);
     // Images
@@ -85,18 +91,13 @@ Route::prefix('products')->group(function () {
 });
 
 
-
 Route::prefix('shops')->group(function () {
     Route::post('/create', [ShopController::class, 'createShop']);
-
-    Route::get('/list', [ShopController::class, 'listShops']);
+    Route::get('/list', [ShopController::class, 'listShops'])->withoutMiddleware('token');
     Route::get('/details/{id}', [ShopController::class, 'getShopDetails']);
     Route::get('/products/{id}', [ShopController::class, 'getShopProducts']);
-
     Route::post('/update/{id}', [ShopController::class, 'updateShop']);
-
     Route::patch('/status/{id}', [ShopController::class, 'updateShopStatus']);
-
     Route::delete('/delete/{id}', [ShopController::class, 'deleteShop']);
 });
 
@@ -128,6 +129,10 @@ Route::prefix('orders')->group(function () {
     Route::get('/completed', [OrderController::class, 'completedOrders']);
     Route::get('/completed/{userId}', [OrderController::class, 'completedOrdersByUser']);
 
+    // Shop orders (via shops.user_id -> order_items.shop_id)
+    Route::get('/shop/{userId}', [OrderController::class, 'listOrdersByShop']);
+    Route::get('/shop/{shopId}/check/{orderId}', [OrderController::class, 'checkShopOrder']);
+
     Route::get('/details/{id}', [OrderController::class, 'getOrderDetails']);
 
     Route::patch('/status/{id}', [OrderController::class, 'updateOrderStatus']);
@@ -139,9 +144,20 @@ Route::prefix('orders')->group(function () {
 Route::prefix('addresses')->group(function () {
     Route::post('/add', [DeliveryAddressController::class, 'addDeliveryAddress']);
     Route::get('/user/{userId}', [DeliveryAddressController::class, 'getAddressByUser']);
+  
     Route::delete('/delete/{id}', [DeliveryAddressController::class, 'deleteAddress']);
     Route::patch('/inactive/{id}', [DeliveryAddressController::class, 'inactiveAddress']);
     Route::put('/update/{id}', [DeliveryAddressController::class, 'updateAddress']);
+});
+
+Route::prefix('bank-accounts')->group(function () {
+    Route::post('/add', [BankAccountSellerController::class, 'addBankAccount']);
+    Route::get('/user/{userId}', [BankAccountSellerController::class, 'getAccountByUserId']);
+});
+
+Route::prefix('locations')->group(function () {
+    Route::get('/divisions', [DeliveryAddressController::class, 'getDivisions']);
+    Route::get('/districts/{divisionId}', [DeliveryAddressController::class, 'getDistrictsByDivision']);
 });
 
 
@@ -155,7 +171,7 @@ Route::prefix('wishlists')->group(function () {
 // Related products endpoints
 Route::prefix('related-products')->group(function () {
     Route::post('/add', [RelatedProductController::class, 'addRelatedProduct']);
-    Route::get('/list/{productId}', [RelatedProductController::class, 'getRelatedProduct']);
+    Route::get('/list/{productId}', [RelatedProductController::class, 'getRelatedProduct'])->withoutMiddleware('token');
     Route::delete('/remove/{id}', [RelatedProductController::class, 'remove']);
 });
 
@@ -163,7 +179,7 @@ Route::prefix('related-products')->group(function () {
 Route::prefix('reviews')->group(function () {
     Route::post('/add', [ReviewController::class, 'addReview']);
     Route::get('/list', [ReviewController::class, 'getAllReview']);
-    Route::get('/product/{productId}', [ReviewController::class, 'getReviewByProduct']);
+    Route::get('/product/{productId}', [ReviewController::class, 'getReviewByProduct'])->withoutMiddleware('token');
     Route::get('/user/{userId}', [ReviewController::class, 'getReviewByUser']);
     Route::put('/update-by-user/{id}', [ReviewController::class, 'updateReviewByUser']);
     Route::delete('/remove/{id}', [ReviewController::class, 'removeReview']);
@@ -173,7 +189,7 @@ Route::prefix('reviews')->group(function () {
 // Banner endpoints
 Route::prefix('banners')->group(function () {
     Route::post('/add', [BannerController::class, 'addBanner']);
-    Route::get('/active', [BannerController::class, 'getActiveBanner']);
+    Route::get('/active', [BannerController::class, 'getActiveBanner'])->withoutMiddleware('token');
     Route::delete('/remove/{id}', [BannerController::class, 'removeBanner']);
 });
 
@@ -201,6 +217,10 @@ Route::prefix('product-attributes')->group(function () {
 
 Route::prefix('reports')->group(function () {
     Route::get('/dashboard', [ReportController::class, 'dashboard']);
+    Route::get('/shop/{userId}', [ReportController::class, 'shopReportByUser']);
+    Route::get('/shop/sales/{shopId}', [ReportController::class, 'shopSalesReport']);
+    Route::get('/orders/monthly', [ReportController::class, 'orderReportMonthly']);
+    Route::get('/today', [ReportController::class, 'todayReport']);
 });
 
 Route::prefix('product-discounts')->group(function () {
@@ -233,4 +253,21 @@ Route::prefix('transactions')->group(function () {
     Route::get('/credit', [TransactionController::class, 'creditTransaction']);
     Route::get('/debit', [TransactionController::class, 'debitTransaction']);
     Route::get('/report', [TransactionController::class, 'transactionReport']);
+    Route::post('/settle/{vendorId}', [TransactionController::class, 'settleAmount']);
+});
+
+Route::prefix('website-settings')->group(function () {
+    Route::post('/logo', [WebsiteSettingController::class, 'addWebsiteLogo']);
+    Route::post('/add', [WebsiteSettingController::class, 'addWebsiteSetting']);
+    Route::get('/logo', [WebsiteSettingController::class, 'getLogo'])->withoutMiddleware('token');
+    Route::get('/website', [WebsiteSettingController::class, 'getWebsiteSetting'])->withoutMiddleware('token');
+});
+Route::prefix('shipping-costs')->group(function () {
+    Route::post('/set', [ShippingCostController::class, 'setShippingCost']);
+    Route::get('/get', [ShippingCostController::class, 'getShippingCost']);
+});
+
+Route::prefix('sms')->group(function () {
+    Route::post('/send', [SMSController::class, 'sendSms'])->withoutMiddleware('token');;
+    Route::post('/verify', [SMSController::class, 'verifyOtp'])->withoutMiddleware('token');;
 });

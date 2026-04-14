@@ -14,6 +14,7 @@ class Product extends Model
         'name',
         'added_by',
         'user_id',
+        'shop_id',
         'category_id',
         'brand_id',
         'photos',
@@ -94,12 +95,12 @@ class Product extends Model
     }
     public function shop()
     {
-        return $this->belongsTo(User::class, 'user_id');
+        return $this->belongsTo(Shops::class, 'shop_id');
     }
 
     public function images()
     {
-        return $this->hasMany(ProductAttribute::class, 'product_id');
+        return $this->hasMany(ProductImage::class, 'product_id');
     }
     public function productAttributes()
     {

@@ -55,6 +55,26 @@ class CategoryController extends Controller
     /**
      * GET /categories/list?parent_id=&status=&per_page=
      */
+
+    public function getCategoryInfo(Request $request)
+    {
+        try {
+            $categoryId = $request->get('category_id');
+            if (!$categoryId) {
+                return $this->failed('category_id is required', null, 422);
+            }
+
+            $category = Category::with('banner')->find($categoryId);
+
+            if (!$category) {
+                return $this->failed('Category not found', null, 404);
+            }
+
+            return $this->success('Category info fetched successfully', $category);
+        } catch (\Throwable $e) {
+            return $this->failed('Something went wrong', ['error' => $e->getMessage()], 500);
+        }
+    }
     public function listCategories(Request $request)
     {
         try {
@@ -62,6 +82,7 @@ class CategoryController extends Controller
             $query = Category::query()
             ->with('banner')
                 ->where('parent_id', 0)
+                ->where('is_active', 1)
                 ->where('featured', 1);
 
             $perPage = (int) $request->get('per_page', 20);
@@ -174,12 +195,46 @@ class CategoryController extends Controller
                 return $this->failed('Category not found', null, 404);
             }
 
-            $children = Category::where('parent_id', $id)
+            $children = Category::where('parent_id', $id)->where('is_active', 1)
+                 ->with('banner')
                 ->orderByRaw('COALESCE(order_level, 999999) asc')
                 ->latest()
                 ->get();
 
             return $this->success('Sub-categories fetched successfully', $children);
+        } catch (\Throwable $e) {
+            return $this->failed('Something went wrong', ['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * GET /categories/with-children
+     * List categories grouped by parent_id with all children
+     */
+    public function getCategoryWithAllChildren()
+    {
+        try {
+            $categories = Category::with('banner')->where('is_active', 1)
+                ->orderByRaw('COALESCE(order_level, 999999) asc')
+                ->get();
+
+            $byParent = $categories->groupBy(function ($category) {
+                return $category->parent_id ?? 0;
+            });
+
+            $buildTree = function ($parentId) use (&$buildTree, $byParent) {
+                $children = $byParent->get($parentId, collect());
+
+                return $children->map(function ($category) use (&$buildTree) {
+                    $nested = $buildTree($category->id);
+                    $category->setRelation('children', $nested);
+                    return $category;
+                });
+            };
+
+            $tree = $buildTree(0);
+
+            return $this->success('Categories with children fetched successfully', $tree);
         } catch (\Throwable $e) {
             return $this->failed('Something went wrong', ['error' => $e->getMessage()], 500);
         }

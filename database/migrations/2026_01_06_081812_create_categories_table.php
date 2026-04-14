@@ -20,6 +20,7 @@ return new class extends Migration
             $table->string('name', 50);
 
             $table->integer('order_level')->default(0);
+            $table->integer('is_active')->default(1);
 
             $table->double('commision_rate', 8, 2)->default(0.00);
 
