@@ -278,7 +278,7 @@ public function getDeliveryManReport($deliveryManId)
                  ->whereHas('order', function ($q) {
                     $q->where('status', 'on the way');
                 })
-                ->count();
+                ->count(); 
 
             $data = [
                 'completed_order_count' => $completedCount,
