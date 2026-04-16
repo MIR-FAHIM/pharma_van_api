@@ -7,6 +7,12 @@ use App\Models\Banner;
 use Illuminate\Http\Response;
 
 class BannerController extends Controller
+
+    /**
+     * PUT /banners/update/{id}
+     * Update a banner by ID
+     */
+
 {
     private function success($message, $data = null, int $code = 200)
     {
@@ -99,4 +105,34 @@ class BannerController extends Controller
             return $this->failed('Something went wrong', ['error' => $e->getMessage()], 500);
         }
     }
+    public function updateBanner(Request $request, $id)
+    {
+        try {
+            $banner = Banner::find($id);
+            if (!$banner) {
+                return $this->failed('Banner not found', null, 404);
+            }
+
+            $validated = $request->validate([
+                'banner_name' => ['sometimes', 'string', 'max:255'],
+                'title' => ['nullable', 'string', 'max:255'],
+                'related_product_id' => ['nullable', 'integer', 'exists:products,id'],
+                'related_category_id' => ['nullable', 'integer', 'exists:categories,id'],
+                'image_id' => ['nullable', 'integer', 'exists:uploads,id'],
+                'image_path' => ['nullable', 'string', 'max:255'],
+                'note' => ['nullable', 'string'],
+                'is_active' => ['nullable', 'boolean'],
+            ]);
+
+            $banner->fill($validated);
+            $banner->save();
+
+            return $this->success('Banner updated successfully', $banner);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return $this->failed('Validation failed', $e->errors(), 422);
+        } catch (\Throwable $e) {
+            return $this->failed('Something went wrong', ['error' => $e->getMessage()], 500);
+        }
+    }
+    
 }
