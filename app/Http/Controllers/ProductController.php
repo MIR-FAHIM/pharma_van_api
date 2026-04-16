@@ -28,7 +28,24 @@ class ProductController extends Controller
             'errors' => $errors
         ], $code);
     }
-
+    private function getFinalSalePrice($product)
+    {
+        $unitPrice = is_array($product) ? ($product['unit_price'] ?? 0) : ($product->unit_price ?? 0);
+        $discount = is_array($product) ? ($product['discount'] ?? 0) : ($product->discount ?? 0);
+        $discountType = is_array($product) ? ($product['discount_type'] ?? null) : ($product->discount_type ?? null);
+        $finalSalePrice = $unitPrice;
+        if ($discount && $discountType) {
+            if ($discountType === 'percent') {
+                $finalSalePrice = $unitPrice - ($unitPrice * ($discount / 100));
+            } elseif ($discountType === 'amount') {
+                $finalSalePrice = $unitPrice - $discount;
+            }
+            if ($finalSalePrice < 0) {
+                $finalSalePrice = 0;
+            }
+        }
+        return round($finalSalePrice, 2);
+    }
     /**
      * POST /products/create
      * Creates product (optionally with images array)
@@ -598,14 +615,15 @@ class ProductController extends Controller
                 'related',
                 'productAttributes.attribute',
                 'productAttributes.value',
-                'productDiscount',
+                
             ])->find($id);
 
             if (!$product) {
                 return $this->failed('Product not found', null, 404);
             }
-
-            return $this->success('Product fetched successfully', $product);
+$productArr = $product->toArray();
+$productArr['final_sale_price'] = $this->getFinalSalePrice($product);
+            return $this->success('Product fetched successfully', $productArr);
         } catch (\Throwable $e) {
             return $this->failed('Something went wrong', ['error' => $e->getMessage()], 500);
         }
