@@ -116,14 +116,14 @@ class ShopController extends Controller
             $query = Shops::query();
 
             if ($request->filled('status')) {
-                $query->where('status', 'active');
+                $query->where('status', $request->status);
             }
 
             if ($request->filled('user_id')) {
                 $query->where('user_id', $request->user_id);
             }
 
-            $query->where('status', 'active')->latest();
+            $query->latest();
 
             if ($request->filled('all') && (int) $request->get('all') === 1) {
                 $shops = $query->get();
