@@ -123,7 +123,7 @@ class ShopController extends Controller
                 $query->where('user_id', $request->user_id);
             }
 
-            $query->latest();
+            $query->where('status', 'active')->latest();
 
             if ($request->filled('all') && (int) $request->get('all') === 1) {
                 $shops = $query->get();
