@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\Shops;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
@@ -37,44 +38,85 @@ class UserController extends Controller
                 'name' => ['nullable', 'string', 'max:255'],
                 'email' => ['nullable', 'email', 'max:255', 'unique:users,email'],
                 'password' => ['required', 'string', 'min:6'],
-                'role' => ['nullable', Rule::in(['admin', 'vendor', 'customer'])],
-
+                'user_type' => ['nullable', Rule::in(['admin', 'seller', 'customer', 'delivery_boy'])],
                 'phone' => ['nullable', 'string', 'max:50'],
-                'optional_phone' => ['nullable', 'string', 'max:50'],
                 'address' => ['nullable', 'string', 'max:1000'],
-                'fcm_token' => ['nullable', 'string', 'max:500'],
-                'status' => ['nullable', 'string', 'max:50'],
-
-                'zone' => ['nullable', 'string', 'max:100'],
-                'district' => ['nullable', 'string', 'max:100'],
-                'area' => ['nullable', 'string', 'max:100'],
-                'lat' => ['nullable', 'numeric'],
-                'lon' => ['nullable', 'numeric'],
-                'is_banned' => ['nullable', 'boolean'],
+                'avatar' => ['nullable', 'string', 'max:255'],
+                'avatar_original' => ['nullable', 'string', 'max:255'],
+                'country' => ['nullable', 'string', 'max:100'],
+                'state' => ['nullable', 'string', 'max:100'],
+                'city' => ['nullable', 'string', 'max:100'],
+                'postal_code' => ['nullable', 'string', 'max:20'],
+              
             ]);
 
             $user = User::create([
                 'name' => $validated['name'] ?? null,
                 'email' => $validated['email'] ?? null,
                 'password' => Hash::make($validated['password']),
-                'role' => $validated['role'] ?? 'customer',
-
+                'user_type' => $validated['user_type'] ?? 'customer',
                 'phone' => $validated['phone'] ?? null,
-                'optional_phone' => $validated['optional_phone'] ?? null,
                 'address' => $validated['address'] ?? null,
-                'fcm_token' => $validated['fcm_token'] ?? null,
-                'status' => $validated['status'] ?? null,
-
-                'zone' => $validated['zone'] ?? null,
-                'district' => $validated['district'] ?? null,
-                'area' => $validated['area'] ?? null,
-                'lat' => $validated['lat'] ?? null,
-                'lon' => $validated['lon'] ?? null,
-
-                'is_banned' => array_key_exists('is_banned', $validated) ? (bool) $validated['is_banned'] : null,
+                'avatar' => $validated['avatar'] ?? null,
+                'avatar_original' => $validated['avatar_original'] ?? null,
+                'country' => $validated['country'] ?? null,
+                'state' => $validated['state'] ?? null,
+                'city' => $validated['city'] ?? null,
+                'postal_code' => $validated['postal_code'] ?? null,
+         
             ]);
 
             return $this->success('User created successfully', $user, 201);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return $this->failed('Validation failed', $e->errors(), 422);
+        } catch (\Throwable $e) {
+            return $this->failed('Something went wrong', ['error' => $e->getMessage()], 500);
+        }
+    }
+    public function createSeller(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'name' => ['nullable', 'string', 'max:255'],
+                'email' => ['nullable', 'email', 'max:255', 'unique:users,email'],
+                'password' => ['required', 'string', 'min:6'],
+                'user_type' => ['nullable', Rule::in(['admin', 'seller', 'customer', 'delivery_boy'])],
+                'phone' => ['nullable', 'string', 'max:50'],
+                'address' => ['nullable', 'string', 'max:1000'],
+                'avatar' => ['nullable', 'string', 'max:255'],
+                'avatar_original' => ['nullable', 'string', 'max:255'],
+                'country' => ['nullable', 'string', 'max:100'],
+                'state' => ['nullable', 'string', 'max:100'],
+                'city' => ['nullable', 'string', 'max:100'],
+                'postal_code' => ['nullable', 'string', 'max:20'],
+            ]);
+
+            $user = User::create([
+                'name' => $validated['name'] ?? null,
+                'email' => $validated['email'] ?? null,
+                'password' => Hash::make($validated['password']),
+                'user_type' => $validated['user_type'] ?? 'seller',
+                'phone' => $validated['phone'] ?? null,
+                'address' => $validated['address'] ?? null,
+                'avatar' => $validated['avatar'] ?? null,
+                'avatar_original' => $validated['avatar_original'] ?? null,
+                'country' => $validated['country'] ?? null,
+                'state' => $validated['state'] ?? null,
+                'city' => $validated['city'] ?? null,
+                'postal_code' => $validated['postal_code'] ?? null,
+            ]);
+
+            // Create Shop for this seller
+            Shops::create([
+                'user_id' => $user->id,
+                'name' => $user->name ?? 'Shop of ' . ($user->email ?? 'seller'),
+                'email' => $user->email,
+                'phone' => $user->phone,
+                'address' => $user->address,
+                // Other fields can be filled later or left null
+            ]);
+
+            return $this->success('Seller and shop created successfully', $user, 201);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return $this->failed('Validation failed', $e->errors(), 422);
         } catch (\Throwable $e) {
