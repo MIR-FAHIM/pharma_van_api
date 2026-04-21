@@ -72,7 +72,7 @@ class CartController extends Controller
                 'qty' => ['required', 'integer', 'min:1'],
             ]);
 
-            $product = Product::with('productDiscount')->find($validated['product_id']);
+            $product = Product::find($validated['product_id']);
             if (!$product) {
                 return $this->failed('Product not found', null, 404);
             }
@@ -85,9 +85,14 @@ class CartController extends Controller
                 $unitPrice = !is_null($product->unit_price) ? (float) $product->unit_price : null;
             }
 
-            // Apply product-level discount if available and valid
-            if (!is_null($unitPrice) && $product->productDiscount && $product->productDiscount->isValid()) {
-                $unitPrice = (float) $product->productDiscount->applyDiscount($unitPrice);
+            // Apply product-level discount from Product model fields (ignore start/end date)
+            if (!is_null($unitPrice) && !is_null($product->discount) && $product->discount > 0) {
+                if ($product->discount_type === 'percent') {
+                    $unitPrice = $unitPrice - ($unitPrice * ($product->discount / 100));
+                } elseif ($product->discount_type === 'amount') {
+                    $unitPrice = $unitPrice - $product->discount;
+                }
+                if ($unitPrice < 0) $unitPrice = 0;
             }
 
             DB::beginTransaction();
