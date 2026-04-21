@@ -116,7 +116,7 @@ class ShopController extends Controller
             $query = Shops::query();
 
             if ($request->filled('status')) {
-                $query->where('status', $request->status);
+                $query->where('status', 'active');
             }
 
             if ($request->filled('user_id')) {
