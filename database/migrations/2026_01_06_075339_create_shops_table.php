@@ -20,6 +20,7 @@ return new class extends Migration
              
             // Basic shop identity
             $table->string('name')->nullable();
+            $table->string('shop_name')->nullable();
             $table->string('slug')->nullable()->unique();
             $table->text('description')->nullable();
 

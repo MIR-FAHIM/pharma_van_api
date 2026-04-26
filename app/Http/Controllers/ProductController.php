@@ -300,13 +300,21 @@ class ProductController extends Controller
     public function listProducts(Request $request)
     {
         try {
-            $query = Product::query()->with(['primaryImage', 'images', 'category', 
-            'subCategory', 'brand', 'productDiscount', 'averageReview', 'shop']);
+            $query = Product::query()->with([
+                'primaryImage',
+                'images',
+                'category',
+                'subCategory',
+                'brand',
+                'productDiscount',
+                'averageReview',
+                'shop'
+            ]);
 
             if ($request->filled('shop_id')) {
                 $query->where('shop_id', $request->shop_id);
             }
-            
+
             if ($request->filled('user_id')) {
                 $query->where('user_id', $request->user_id);
             }
@@ -346,12 +354,12 @@ class ProductController extends Controller
                         $t = "%" . $token . "%";
                         $q->where(function ($qq) use ($t) {
                             $qq->where('name', 'like', $t)
-                               
+
                                 ->orWhere('slug', 'like', $t)
                                 ->orWhereHas('category', function ($qc) use ($t) {
                                     $qc->where('name', 'like', $t);
                                 })
-                               
+
                                 ->orWhereHas('brand', function ($qc) use ($t) {
                                     $qc->where('name', 'like', $t);
                                 });
@@ -371,10 +379,18 @@ class ProductController extends Controller
     public function listFeaturedProducts(Request $request)
     {
         try {
-            $query = Product::query()->with(['primaryImage', 'images', 'category',
-             'subCategory', 'brand', 'productDiscount', 'averageReview', 'shop']);
+            $query = Product::query()->with([
+                'primaryImage',
+                'images',
+                'category',
+                'subCategory',
+                'brand',
+                'productDiscount',
+                'averageReview',
+                'shop'
+            ]);
 
-          
+
 
             if ($request->filled('featured')) {
                 $query->where('featured', $request->featured);
@@ -394,12 +410,12 @@ class ProductController extends Controller
                         $t = "%" . $token . "%";
                         $q->where(function ($qq) use ($t) {
                             $qq->where('name', 'like', $t)
-                               
+
                                 ->orWhere('slug', 'like', $t)
                                 ->orWhereHas('category', function ($qc) use ($t) {
                                     $qc->where('name', 'like', $t);
                                 })
-                               
+
                                 ->orWhereHas('brand', function ($qc) use ($t) {
                                     $qc->where('name', 'like', $t);
                                 });
@@ -431,7 +447,7 @@ class ProductController extends Controller
                 });
             }
 
-          
+
 
             if ($request->filled('featured')) {
                 $query->where('featured', $request->featured);
@@ -451,12 +467,12 @@ class ProductController extends Controller
                         $t = "%" . $token . "%";
                         $q->where(function ($qq) use ($t) {
                             $qq->where('name', 'like', $t)
-                               
+
                                 ->orWhere('slug', 'like', $t)
                                 ->orWhereHas('category', function ($qc) use ($t) {
                                     $qc->where('name', 'like', $t);
                                 })
-                               
+
                                 ->orWhereHas('brand', function ($qc) use ($t) {
                                     $qc->where('name', 'like', $t);
                                 });
@@ -478,7 +494,7 @@ class ProductController extends Controller
         try {
             $query = Product::query()->with(['primaryImage', 'images', 'category', 'subCategory', 'brand', 'productDiscount', 'averageReview', 'shop']);
 
-          
+
 
             if ($request->filled('todays_deal')) {
                 $query->where('todays_deal', $request->todays_deal);
@@ -498,12 +514,12 @@ class ProductController extends Controller
                         $t = "%" . $token . "%";
                         $q->where(function ($qq) use ($t) {
                             $qq->where('name', 'like', $t)
-                               
+
                                 ->orWhere('slug', 'like', $t)
                                 ->orWhereHas('category', function ($qc) use ($t) {
                                     $qc->where('name', 'like', $t);
                                 })
-                               
+
                                 ->orWhereHas('brand', function ($qc) use ($t) {
                                     $qc->where('name', 'like', $t);
                                 });
@@ -615,14 +631,14 @@ class ProductController extends Controller
                 'related',
                 'productAttributes.attribute',
                 'productAttributes.value',
-                
+
             ])->find($id);
 
             if (!$product) {
                 return $this->failed('Product not found', null, 404);
             }
-$productArr = $product->toArray();
-$productArr['final_sale_price'] = $this->getFinalSalePrice($product);
+            $productArr = $product->toArray();
+            $productArr['final_sale_price'] = $this->getFinalSalePrice($product);
             return $this->success('Product fetched successfully', $productArr);
         } catch (\Throwable $e) {
             return $this->failed('Something went wrong', ['error' => $e->getMessage()], 500);
@@ -641,7 +657,7 @@ $productArr['final_sale_price'] = $this->getFinalSalePrice($product);
                 return $this->failed('Product not found', null, 404);
             }
             // Normalize photos input: accept comma string or single id and convert to array
-            
+
             $validated = $request->validate([
                 'name' => ['sometimes', 'nullable', 'string', 'max:255'],
                 'added_by' => ['sometimes', 'nullable', 'string', 'max:255'],
@@ -649,7 +665,7 @@ $productArr['final_sale_price'] = $this->getFinalSalePrice($product);
                 'category_id' => ['sometimes', 'nullable', 'integer', 'exists:categories,id'],
                 'brand_id' => ['sometimes', 'nullable', 'integer', 'exists:brands,id'],
 
-               
+
                 'thumbnail_img' => ['sometimes', 'nullable', 'integer', 'exists:uploads,id'],
 
                 'video_provider' => ['sometimes', 'nullable', 'string', 'max:100'],
@@ -718,20 +734,22 @@ $productArr['final_sale_price'] = $this->getFinalSalePrice($product);
             }
 
             // Normalize boolean flags explicitly when present
-            foreach ([
-                'variant_product',
-                'todays_deal',
-                'published',
-                'approved',
-                'cash_on_delivery',
-                'featured',
-                'seller_featured',
-                'is_quantity_multiplied',
-                'refundable',
-                'digital',
-                'auction_product',
-                'wholesale_product',
-            ] as $flag) {
+            foreach (
+                [
+                    'variant_product',
+                    'todays_deal',
+                    'published',
+                    'approved',
+                    'cash_on_delivery',
+                    'featured',
+                    'seller_featured',
+                    'is_quantity_multiplied',
+                    'refundable',
+                    'digital',
+                    'auction_product',
+                    'wholesale_product',
+                ] as $flag
+            ) {
                 if (array_key_exists($flag, $validated)) {
                     $validated[$flag] = (bool) $validated[$flag];
                 }
@@ -740,7 +758,7 @@ $productArr['final_sale_price'] = $this->getFinalSalePrice($product);
             $product->fill($validated);
             $product->save();
 
-           
+
 
             return $this->success('Product updated successfully', $product);
         } catch (ValidationException $e) {
@@ -833,5 +851,45 @@ $productArr['final_sale_price'] = $this->getFinalSalePrice($product);
         } catch (\Throwable $e) {
             return $this->failed('Something went wrong', ['error' => $e->getMessage()], 500);
         }
+    }
+
+
+
+        /**
+     * GET /products/seller-featured-by-product?product_id=xxx
+     * Returns all products from the same shop as the given product_id where seller_featured == 1
+     */
+    public function getSellerFeaturedByProduct(Request $request)
+    {
+        $productId = $request->query('product_id');
+        if (!$productId) {
+            return $this->failed('product_id is required', null, 422);
+        }
+
+        $product = Product::find($productId);
+        if (!$product) {
+            return $this->failed('Product not found', null, 404);
+        }
+
+        $shopId = $product->shop_id;
+        if (!$shopId) {
+            return $this->failed('Shop not found for this product', null, 404);
+        }
+
+        $products = Product::with([
+            'primaryImage',
+            'images',
+            'category',
+            'subCategory',
+            'brand',
+            'productDiscount',
+            'averageReview',
+            'shop'
+        ])
+        ->where('shop_id', $shopId)
+        ->where('seller_featured', 1)
+        ->get();
+
+        return $this->success('Seller featured products fetched successfully', $products, 200);
     }
 }

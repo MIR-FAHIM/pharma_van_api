@@ -39,6 +39,7 @@ class ShopController extends Controller
                 'user_id' => ['nullable', 'integer', 'exists:users,id'],
 
                 'name' => ['nullable', 'string', 'max:255'],
+                'shop_name' => ['nullable', 'string', 'max:255'],
                 'slug' => ['nullable', 'string', 'max:255', 'unique:shops,slug'],
                 'description' => ['nullable', 'string'],
 
@@ -79,6 +80,7 @@ class ShopController extends Controller
             $shop = Shops::create([
                 'user_id' => $validated['user_id'] ?? null,
 
+                'shop_name' => $validated['shop_name'] ?? null,
                 'name' => $validated['name'] ?? null,
                 'slug' => $validated['slug'] ?? null,
                 'description' => $validated['description'] ?? null,
@@ -229,6 +231,7 @@ class ShopController extends Controller
                 'user_id' => ['nullable', 'integer', 'exists:users,id'],
 
                 'name' => ['nullable', 'string', 'max:255'],
+                'shop_name' => ['nullable', 'string', 'max:255'],
                 'slug' => ['nullable', 'string', 'max:255', Rule::unique('shops', 'slug')->ignore($shop->id)],
                 'description' => ['nullable', 'string'],
 

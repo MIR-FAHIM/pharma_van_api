@@ -76,6 +76,7 @@ Route::prefix('brands')->group(function () {
 
 Route::prefix('products')->group(function () {
     Route::post('/create', [ProductController::class, 'createProduct']);
+    Route::get('/seller-featured-by-product', [ProductController::class, 'getSellerFeaturedByProduct']);
     Route::post('/images/upload/{productId}', [ProductController::class, 'productImageUpload']);
     Route::get('/images/{productId}', [ProductImageController::class, 'getProductImages'])->withoutMiddleware('token');
     Route::get('/list', [ProductController::class, 'listProducts'])->withoutMiddleware('token');;

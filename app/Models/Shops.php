@@ -14,6 +14,7 @@ class Shops extends Model
     protected $fillable = [
         'user_id',
         'name',
+        'shop_name',
         'slug',
         'description',
         'logo',
