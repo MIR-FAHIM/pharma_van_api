@@ -211,32 +211,33 @@ class CategoryController extends Controller
      * GET /categories/with-children
      * List categories grouped by parent_id with all children
      */
-    public function getCategoryWithAllChildren()
-    {
-        try {
-            $categories = Category::with('banner')->where('is_active', 1)
-                ->orderByRaw('COALESCE(order_level, 999999) asc')
-                ->get();
+public function getCategoryWithAllChildren()
+{
+    try {
+        $categories = Category::with('banner')
+            ->where('is_active', 1)
+            ->orderByRaw('COALESCE(order_level, 999999) ASC')
+            ->get();
 
-            $byParent = $categories->groupBy(function ($category) {
-                return $category->parent_id ?? 0;
+        // Group by parent_id, casting to int so null → 0 and "5" === 5
+        $byParent = $categories->groupBy(function ($category) {
+            return (int) ($category->parent_id ?? 0);
+        });
+
+        $buildTree = function (int $parentId) use (&$buildTree, $byParent) {
+            $children = $byParent->get($parentId, collect());
+
+            return $children->map(function ($category) use (&$buildTree) {
+                $category->setRelation('children', $buildTree((int) $category->id));
+                return $category;
             });
+        };
 
-            $buildTree = function ($parentId) use (&$buildTree, $byParent) {
-                $children = $byParent->get($parentId, collect());
+        $tree = $buildTree(0);
 
-                return $children->map(function ($category) use (&$buildTree) {
-                    $nested = $buildTree($category->id);
-                    $category->setRelation('children', $nested);
-                    return $category;
-                });
-            };
-
-            $tree = $buildTree(0);
-
-            return $this->success('Categories with children fetched successfully', $tree);
-        } catch (\Throwable $e) {
-            return $this->failed('Something went wrong', ['error' => $e->getMessage()], 500);
-        }
+        return $this->success('Categories with children fetched successfully', $tree);
+    } catch (\Throwable $e) {
+        return $this->failed('Something went wrong', ['error' => $e->getMessage()], 500);
     }
+}
 }
