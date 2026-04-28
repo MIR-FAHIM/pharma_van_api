@@ -58,8 +58,8 @@ Route::prefix('categories')->group(function () {
     Route::get('/list', [CategoryController::class, 'listCategories'])->withoutMiddleware('token');
     Route::get('/category/info', [CategoryController::class, 'getCategoryInfo'])->withoutMiddleware('token');
     Route::get('/with-children', [CategoryController::class, 'getCategoryWithAllChildren'])->withoutMiddleware('token');
-    Route::get('/details/{id}', [CategoryController::class, 'getCategoryDetails']);
-    Route::get('/children/{id}', [CategoryController::class, 'getCategoryChildren']);
+    Route::get('/details/{id}', [CategoryController::class, 'getCategoryDetails'])->withoutMiddleware('token');
+    Route::get('/children/{id}', [CategoryController::class, 'getCategoryChildren'])->withoutMiddleware('token');
 
     Route::put('/update/{id}', [CategoryController::class, 'updateCategory']);
 
