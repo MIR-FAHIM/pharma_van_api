@@ -888,6 +888,8 @@ class ProductController extends Controller
         ])
         ->where('shop_id', $shopId)
         ->where('seller_featured', 1)
+        ->limit(8)
+        
         ->get();
 
         return $this->success('Seller featured products fetched successfully', $products, 200);
