@@ -110,6 +110,7 @@ class UserController extends Controller
             Shops::create([
                 'user_id' => $user->id,
                 'name' => $user->name ?? 'Shop of ' . ($user->email ?? 'seller'),
+                'shop_name' => $request->input('shop_name', $user->name . "'s Shop"),
                 'email' => $user->email,
                 'phone' => $user->phone,
                 'address' => $user->address,
