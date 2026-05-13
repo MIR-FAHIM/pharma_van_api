@@ -27,6 +27,7 @@ use App\Http\Controllers\WebsiteSettingController;
 use App\Http\Controllers\ShippingCostController;
 use App\Http\Controllers\SMSController;
 use App\Http\Controllers\BankAccountSellerController;
+use App\Http\Controllers\OrderStatusController;
 
 // Authentication endpoints hlw
 Route::post('/auth/login', [AuthController::class, 'login'])->withoutMiddleware('token');
@@ -126,6 +127,7 @@ Route::prefix('orders')->group(function () {
 
     Route::get('/list/{userId}', [OrderController::class, 'listOrdersByUser']);
     Route::get('/all/orders', [OrderController::class, 'allOrders']);
+    Route::get('/orderstatus', [OrderStatusController::class, 'listOrderStatuses']);
 
     // Completed orders
     Route::get('/completed', [OrderController::class, 'completedOrders']);
@@ -273,4 +275,8 @@ Route::prefix('shipping-costs')->group(function () {
 Route::prefix('sms')->group(function () {
     Route::post('/send', [SMSController::class, 'sendSms'])->withoutMiddleware('token');;
     Route::post('/verify', [SMSController::class, 'verifyOtp'])->withoutMiddleware('token');;
+});
+
+Route::prefix('order-statuses')->group(function () {
+    Route::get('/list', [OrderStatusController::class, 'list']);
 });
