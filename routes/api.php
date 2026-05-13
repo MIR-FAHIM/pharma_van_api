@@ -97,7 +97,7 @@ Route::prefix('products')->group(function () {
 Route::prefix('shops')->group(function () {
     Route::post('/create', [ShopController::class, 'createShop']);
     Route::get('/list', [ShopController::class, 'listShops'])->withoutMiddleware('token');
-    Route::get('/details/{id}', [ShopController::class, 'getShopDetails']);
+    Route::get('/details/{id}', [ShopController::class, 'getShopDetails'])->withoutMiddleware('token');;
     Route::get('/products/{id}', [ShopController::class, 'getShopProducts'])->withoutMiddleware('token');;
     Route::post('/update/{id}', [ShopController::class, 'updateShop']);
     Route::patch('/status/{id}', [ShopController::class, 'updateShopStatus']);
