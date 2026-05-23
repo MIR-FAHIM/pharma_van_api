@@ -196,7 +196,7 @@ class CategoryController extends Controller
             }
 
             $children = Category::where('parent_id', $id)->where('is_active', 1)
-                 ->with('banner')
+                 ->with('banner', 'coverImage')
                 ->orderByRaw('COALESCE(order_level, 999999) asc')
                 ->latest()
                 ->get();
