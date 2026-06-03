@@ -190,8 +190,16 @@ class OrderController extends Controller
         try {
             $perPage = (int) $request->get('per_page', 20);
 
-            $orders = Order::latest()
+            $orders = Order::with(['items.shop'])
+                ->latest()
                 ->paginate($perPage);
+
+            // Each order belongs to one shop — append shop_name directly on the order
+            foreach ($orders as $order) {
+                $firstItem = $order->items->first();
+                $order->shop_name = $firstItem ? optional($firstItem->shop)->name : null;
+                $order->shop_id   = $firstItem ? $firstItem->shop_id : null;
+            }
 
             return $this->success('Orders fetched successfully', $orders);
         } catch (\Throwable $e) {
