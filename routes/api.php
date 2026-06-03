@@ -106,8 +106,6 @@ Route::prefix('shops')->group(function () {
 
 
 
-
-
 Route::prefix('carts')->group(function () {
     Route::get('/active/{userId}', [CartController::class, 'getActiveCart']);
 

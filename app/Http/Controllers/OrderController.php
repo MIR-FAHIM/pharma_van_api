@@ -77,65 +77,75 @@ class OrderController extends Controller
 
             DB::beginTransaction();
 
-            // Recalculate subtotal from cart_items (server truth)
-            $subtotal = 0;
-            foreach ($cartItems as $ci) {
-                $subtotal += (float) ($ci->line_total ?? 0);
-            }
-
             // Use global shipping cost (first record)
             $shippingSetting = ShippingCost::first();
             $shippingFee = $shippingSetting ? (float) ($shippingSetting->shipping_cost ?? 0) : 0;
             $discount = 0;
-            $total = round(($subtotal + $shippingFee) - $discount, 2);
 
-            // Generate an order_number that is human-friendly and unique
-            $orderNumber = 'ORD-' . date('Ymd') . '-' . strtoupper(Str::random(6));
+            // Group cart items by shop_id — create a separate order per shop
+            $groupedItems = $cartItems->groupBy('shop_id');
 
-            $order = Order::create([
-                'user_id' => $validated['user_id'],
-                'order_number' => $orderNumber,
+            $orders = [];
 
-                'status' => 'pending',
-                'payment_status' => 'unpaid',
+            foreach ($groupedItems as $shopId => $shopItems) {
+                // Recalculate subtotal for this shop's items
+                $subtotal = 0;
+                foreach ($shopItems as $ci) {
+                    $subtotal += (float) ($ci->line_total ?? 0);
+                }
+                $total = round(($subtotal + $shippingFee) - $discount, 2);
 
-                'customer_name' => $validated['customer_name'] ?? null,
-                'customer_phone' => $validated['customer_phone'] ?? null,
-                'shipping_address' => $validated['shipping_address'] ?? null,
+                // Generate a unique order_number per order
+                $orderNumber = 'ORD-' . date('Ymd') . '-' . strtoupper(Str::random(6));
 
-                'zone' => $validated['zone'] ?? null,
-                'district' => $validated['district'] ?? null,
-                'area' => $validated['area'] ?? null,
-                'lat' => $validated['lat'] ?? null,
-                'lon' => $validated['lon'] ?? null,
-
-                'subtotal' => round($subtotal, 2),
-                'shipping_fee' => $shippingFee,
-                'discount' => $discount,
-                'total' => $total,
-
-                'note' => $validated['note'] ?? null,
-            ]);
-
-            foreach ($cartItems as $ci) {
-                $product = $ci->product;
-
-                OrderItem::create([
-                    'order_id' => $order->id,
-                    'product_id' => $ci->product_id,
-                    'shop_id' => $ci->shop_id,
-
-                    // Snapshot important product fields
-                    'product_name' => $product ? ($product->name ?? null) : null,
-                    'sku' => $product ? ($product->sku ?? null) : null,
-
-                    // Snapshot cart-time pricing
-                    'unit_price' => $ci->unit_price,
-                    'qty' => $ci->qty,
-                    'line_total' => $ci->line_total,
+                $order = Order::create([
+                    'user_id' => $validated['user_id'],
+                    'order_number' => $orderNumber,
 
                     'status' => 'pending',
+                    'payment_status' => 'unpaid',
+
+                    'customer_name' => $validated['customer_name'] ?? null,
+                    'customer_phone' => $validated['customer_phone'] ?? null,
+                    'shipping_address' => $validated['shipping_address'] ?? null,
+
+                    'zone' => $validated['zone'] ?? null,
+                    'district' => $validated['district'] ?? null,
+                    'area' => $validated['area'] ?? null,
+                    'lat' => $validated['lat'] ?? null,
+                    'lon' => $validated['lon'] ?? null,
+
+                    'subtotal' => round($subtotal, 2),
+                    'shipping_fee' => $shippingFee,
+                    'discount' => $discount,
+                    'total' => $total,
+
+                    'note' => $validated['note'] ?? null,
                 ]);
+
+                foreach ($shopItems as $ci) {
+                    $product = $ci->product;
+
+                    OrderItem::create([
+                        'order_id' => $order->id,
+                        'product_id' => $ci->product_id,
+                        'shop_id' => $ci->shop_id,
+
+                        // Snapshot important product fields
+                        'product_name' => $product ? ($product->name ?? null) : null,
+                        'sku' => $product ? ($product->sku ?? null) : null,
+
+                        // Snapshot cart-time pricing
+                        'unit_price' => $ci->unit_price,
+                        'qty' => $ci->qty,
+                        'line_total' => $ci->line_total,
+
+                        'status' => 'pending',
+                    ]);
+                }
+
+                $order->load(['items']);
+                $orders[] = $order;
             }
 
             // Mark cart as checked_out and clear items
@@ -146,9 +156,7 @@ class OrderController extends Controller
 
             DB::commit();
 
-            $order->load(['items']);
-
-            return $this->success('Checkout successful. Order created.', $order, 201);
+            return $this->success('Checkout successful. Orders created.', $orders, 201);
         } catch (\Illuminate\Validation\ValidationException $e) {
             DB::rollBack();
             return $this->failed('Validation failed', $e->errors(), 422);
