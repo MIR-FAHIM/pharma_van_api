@@ -96,8 +96,8 @@ class ProductController extends Controller
 
                 'discount' => ['nullable', 'numeric'],
                 'discount_type' => ['nullable', 'string', 'max:20'],
-                'discount_start_date' => ['nullable', 'date'],
-                'discount_end_date' => ['nullable', 'date'],
+                'discount_start_date' => ['nullable', 'integer'],
+                'discount_end_date' => ['nullable', 'integer'],
 
                 'tax' => ['nullable', 'numeric'],
                 'tax_type' => ['nullable', 'string', 'max:20'],
@@ -698,8 +698,8 @@ class ProductController extends Controller
 
                 'discount' => ['sometimes', 'nullable', 'numeric'],
                 'discount_type' => ['sometimes', 'nullable', 'string', 'max:20'],
-                'discount_start_date' => ['sometimes', 'nullable', 'date'],
-                'discount_end_date' => ['sometimes', 'nullable', 'date'],
+                'discount_start_date' => ['sometimes', 'nullable', 'integer'],
+                'discount_end_date' => ['sometimes', 'nullable', 'integer'],
 
                 'tax' => ['sometimes', 'nullable', 'numeric'],
                 'tax_type' => ['sometimes', 'nullable', 'string', 'max:20'],
