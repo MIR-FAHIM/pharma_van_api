@@ -141,7 +141,7 @@ class AuthController extends Controller
 
             $rawPhone = trim($validated['mobile_number']);
             $digits = preg_replace('/\D+/', '', $rawPhone);
-
+        
             $local = preg_replace('/^88/', '', $digits);
             $local = preg_replace('/^0/', '', $local);
 
