@@ -41,6 +41,18 @@ class OrderController extends Controller
      */
     public function checkout(Request $request)
     {
+        return $this->checkOutWithDeliveryCharge($request);
+    }
+
+    /**
+     * POST /orders/checkout
+     * Body: user_id, customer_name, customer_phone, shipping_address, zone, district, area, lat, lon, note
+     *
+     * Converts ACTIVE cart -> order + order_items in ONE DB transaction
+     * and splits the delivery charge across all shop orders.
+     */
+    public function checkOutWithDeliveryCharge(Request $request)
+    {
         try {
             $validated = $request->validate([
                 'user_id' => ['required', 'integer', 'exists:users,id'],
@@ -77,15 +89,15 @@ class OrderController extends Controller
 
             DB::beginTransaction();
 
-            // Use global shipping cost (first record)
-            $shippingSetting = ShippingCost::first();
-            $shippingFee = $shippingSetting ? (float) ($shippingSetting->shipping_cost ?? 0) : 0;
+            $shippingFee = $this->resolveBaseShippingFee($validated);
             $discount = 0;
 
             // Group cart items by shop_id — create a separate order per shop
             $groupedItems = $cartItems->groupBy('shop_id');
+            $shippingShares = $this->splitAmountAcrossOrders($shippingFee, $groupedItems->count());
 
             $orders = [];
+            $orderIndex = 0;
 
             foreach ($groupedItems as $shopId => $shopItems) {
                 // Recalculate subtotal for this shop's items
@@ -93,7 +105,8 @@ class OrderController extends Controller
                 foreach ($shopItems as $ci) {
                     $subtotal += (float) ($ci->line_total ?? 0);
                 }
-                $total = round(($subtotal + $shippingFee) - $discount, 2);
+                $shippingShare = $shippingShares[$orderIndex] ?? 0;
+                $total = round(($subtotal + $shippingShare) - $discount, 2);
 
                 // Generate a unique order_number per order
                 $orderNumber = 'ORD-' . date('Ymd') . '-' . strtoupper(Str::random(6));
@@ -116,7 +129,7 @@ class OrderController extends Controller
                     'lon' => $validated['lon'] ?? null,
 
                     'subtotal' => round($subtotal, 2),
-                    'shipping_fee' => $shippingFee,
+                    'shipping_fee' => $shippingShare,
                     'discount' => $discount,
                     'total' => $total,
 
@@ -146,6 +159,7 @@ class OrderController extends Controller
 
                 $order->load(['items']);
                 $orders[] = $order;
+                $orderIndex++;
             }
 
             // Mark cart as checked_out and clear items
@@ -164,6 +178,42 @@ class OrderController extends Controller
             DB::rollBack();
             return $this->failed('Something went wrong', ['error' => $e->getMessage()], 500);
         }
+    }
+
+    private function resolveBaseShippingFee(array $validated): float
+    {
+        $location = collect([
+            $validated['district'] ?? null,
+            $validated['zone'] ?? null,
+            $validated['area'] ?? null,
+            $validated['shipping_address'] ?? null,
+        ])
+            ->filter()
+            ->implode(' ');
+
+        $location = Str::lower($location);
+
+        return Str::contains($location, 'dhaka') ? 60.0 : 120.0;
+    }
+
+    private function splitAmountAcrossOrders(float $amount, int $orderCount): array
+    {
+        if ($orderCount <= 0) {
+            return [];
+        }
+
+        $totalCents = (int) round($amount * 100);
+        $baseShare = intdiv($totalCents, $orderCount);
+        $remainder = $totalCents % $orderCount;
+
+        $shares = [];
+
+        for ($index = 0; $index < $orderCount; $index++) {
+            $shareCents = $baseShare + ($index < $remainder ? 1 : 0);
+            $shares[] = round($shareCents / 100, 2);
+        }
+
+        return $shares;
     }
 
     /**

@@ -121,7 +121,7 @@ Route::prefix('carts')->group(function () {
 
 
 Route::prefix('orders')->group(function () {
-    Route::post('/checkout', [OrderController::class, 'checkout']);
+    Route::post('/checkout', [OrderController::class, 'checkOutWithDeliveryCharge']);
 
     Route::get('/list/{userId}', [OrderController::class, 'listOrdersByUser']);
     Route::get('/all/orders', [OrderController::class, 'allOrders']);
