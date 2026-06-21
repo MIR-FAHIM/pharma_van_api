@@ -92,8 +92,10 @@ class OrderController extends Controller
             $shippingFee = $this->resolveBaseShippingFee($validated);
             $discount = 0;
 
-            // Group cart items by shop_id — create a separate order per shop
-            $groupedItems = $cartItems->groupBy('shop_id');
+            // Group cart items by the resolved shop key so one shop always becomes one order.
+            $groupedItems = $cartItems->groupBy(function ($cartItem) {
+                return $this->resolveCartItemShopId($cartItem) ?? 'unknown';
+            });
             $shippingShares = $this->splitAmountAcrossOrders($shippingFee, $groupedItems->count());
 
             $orders = [];
@@ -138,11 +140,12 @@ class OrderController extends Controller
 
                 foreach ($shopItems as $ci) {
                     $product = $ci->product;
+                    $resolvedShopId = $this->resolveCartItemShopId($ci);
 
                     OrderItem::create([
                         'order_id' => $order->id,
                         'product_id' => $ci->product_id,
-                        'shop_id' => $ci->shop_id,
+                        'shop_id' => $resolvedShopId,
 
                         // Snapshot important product fields
                         'product_name' => $product ? ($product->name ?? null) : null,
@@ -194,6 +197,15 @@ class OrderController extends Controller
         $location = Str::lower($location);
 
         return Str::contains($location, 'dhaka') ? 60.0 : 120.0;
+    }
+
+    private function resolveCartItemShopId(CartItem $cartItem): ?int
+    {
+        if (!empty($cartItem->shop_id)) {
+            return (int) $cartItem->shop_id;
+        }
+
+        return $cartItem->product ? ($cartItem->product->shop_id ? (int) $cartItem->product->shop_id : null) : null;
     }
 
     private function splitAmountAcrossOrders(float $amount, int $orderCount): array
