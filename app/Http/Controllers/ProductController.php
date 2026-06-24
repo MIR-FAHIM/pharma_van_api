@@ -186,7 +186,7 @@ class ProductController extends Controller
                 'pdf' => $validated['pdf'] ?? null,
                 'slug' => $validated['slug'] ?? null,
                 'refundable' => array_key_exists('refundable', $validated) ? (bool) $validated['refundable'] : null,
-                'earn_point' => $validated['earn_point'] ?? null,
+                'earn_point' => $validated['earn_point'] ?? 0,
                 'rating' => $validated['rating'] ?? null,
                 'barcode' => $validated['barcode'] ?? null,
                 'digital' => array_key_exists('digital', $validated) ? (bool) $validated['digital'] : null,
