@@ -167,7 +167,7 @@ class ProductController extends Controller
                 'current_stock' => $validated['current_stock'] ?? null,
                 'unit' => $validated['unit'] ?? null,
                 'weight' => $validated['weight'] ?? null,
-                'min_qty' => $validated['min_qty'] ?? null,
+                'min_qty' => $validated['min_qty'] ?? 1,
                 'low_stock_quantity' => $validated['low_stock_quantity'] ?? null,
                 'discount' => $validated['discount'] ?? null,
                 'discount_type' => $validated['discount_type'] ?? null,
