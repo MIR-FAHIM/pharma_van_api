@@ -179,7 +179,7 @@ class ProductController extends Controller
                 'shipping_cost' => $validated['shipping_cost'] ?? 0,
                 'is_quantity_multiplied' => array_key_exists('is_quantity_multiplied', $validated) ? (bool) $validated['is_quantity_multiplied'] : false,
                 'est_shipping_days' => $validated['est_shipping_days'] ?? null,
-                'num_of_sale' => $validated['num_of_sale'] ?? null,
+                'num_of_sale' => $validated['num_of_sale'] ?? 0,
                 'meta_title' => $validated['meta_title'] ?? null,
                 'meta_description' => $validated['meta_description'] ?? null,
                 'meta_img' => $validated['meta_img'] ?? null,
