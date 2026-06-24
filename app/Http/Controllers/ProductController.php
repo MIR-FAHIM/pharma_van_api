@@ -187,16 +187,16 @@ class ProductController extends Controller
                 'slug' => $validated['slug'] ?? null,
                 'refundable' => array_key_exists('refundable', $validated) ? (bool) $validated['refundable'] : null,
                 'earn_point' => $validated['earn_point'] ?? 0,
-                'rating' => $validated['rating'] ?? null,
+                'rating' => $validated['rating'] ?? 0.00,
                 'barcode' => $validated['barcode'] ?? null,
                 'digital' => array_key_exists('digital', $validated) ? (bool) $validated['digital'] : false,
-                'auction_product' => array_key_exists('auction_product', $validated) ? (bool) $validated['auction_product'] : null,
+                'auction_product' => array_key_exists('auction_product', $validated) ? (bool) $validated['auction_product'] : false,
                 'file_name' => $validated['file_name'] ?? null,
                 'file_path' => $validated['file_path'] ?? null,
                 'external_link' => $validated['external_link'] ?? null,
                 'external_link_btn' => $validated['external_link_btn'] ?? null,
-                'wholesale_product' => array_key_exists('wholesale_product', $validated) ? (bool) $validated['wholesale_product'] : null,
-                'frequently_brought_selection_type' => $validated['frequently_brought_selection_type'] ?? null,
+                'wholesale_product' => array_key_exists('wholesale_product', $validated) ? (bool) $validated['wholesale_product'] : false,
+                'frequently_brought_selection_type' => $validated['frequently_brought_selection_type'] ?? 'product',
             ];
 
             $product = Product::create($productData);
