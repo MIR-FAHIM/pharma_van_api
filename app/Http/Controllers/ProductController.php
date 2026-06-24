@@ -187,7 +187,7 @@ class ProductController extends Controller
                 'slug' => $validated['slug'] ?? null,
                 'refundable' => array_key_exists('refundable', $validated) ? (bool) $validated['refundable'] : null,
                 'earn_point' => $validated['earn_point'] ?? 0,
-                'rating' => $validated['rating'] ?? null,
+                'rating' => $validated['rating'] ?? 0,
                 'barcode' => $validated['barcode'] ?? null,
                 'digital' => array_key_exists('digital', $validated) ? (bool) $validated['digital'] : null,
                 'auction_product' => array_key_exists('auction_product', $validated) ? (bool) $validated['auction_product'] : null,
