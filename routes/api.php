@@ -28,6 +28,7 @@ use App\Http\Controllers\ShippingCostController;
 use App\Http\Controllers\SMSController;
 use App\Http\Controllers\BankAccountSellerController;
 use App\Http\Controllers\OrderStatusController;
+use App\Http\Controllers\ErrorLogController;
 
 // Authentication endpoints hlw
 Route::post('/auth/login', [AuthController::class, 'login'])->withoutMiddleware('token');
@@ -277,4 +278,8 @@ Route::prefix('sms')->group(function () {
 
 Route::prefix('order-statuses')->group(function () {
     Route::get('/list', [OrderStatusController::class, 'list']);
+});
+
+Route::prefix('error-logs')->group(function () {
+    Route::get('/product-create', [ErrorLogController::class, 'listProductCreateErrorLogs']);
 });
