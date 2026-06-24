@@ -177,7 +177,7 @@ class ProductController extends Controller
                 'tax_type' => $validated['tax_type'] ?? null,
                 'shipping_type' => $validated['shipping_type'] ?? null,
                 'shipping_cost' => $validated['shipping_cost'] ?? 0,
-                'is_quantity_multiplied' => array_key_exists('is_quantity_multiplied', $validated) ? (bool) $validated['is_quantity_multiplied'] : null,
+                'is_quantity_multiplied' => array_key_exists('is_quantity_multiplied', $validated) ? (bool) $validated['is_quantity_multiplied'] : false,
                 'est_shipping_days' => $validated['est_shipping_days'] ?? null,
                 'num_of_sale' => $validated['num_of_sale'] ?? null,
                 'meta_title' => $validated['meta_title'] ?? null,
