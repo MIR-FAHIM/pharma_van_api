@@ -163,7 +163,7 @@ class ProductController extends Controller
                 'stock_visibility_state' => $validated['stock_visibility_state'] ?? null,
                 'cash_on_delivery' => array_key_exists('cash_on_delivery', $validated) ? (bool) $validated['cash_on_delivery'] : null,
                 'featured' => array_key_exists('featured', $validated) ? (bool) $validated['featured'] : null,
-                'seller_featured' => array_key_exists('seller_featured', $validated) ? (bool) $validated['seller_featured'] : null,
+                'seller_featured' => array_key_exists('seller_featured', $validated) ? (bool) $validated['seller_featured'] : false,
                 'current_stock' => $validated['current_stock'] ?? null,
                 'unit' => $validated['unit'] ?? null,
                 'weight' => $validated['weight'] ?? null,
