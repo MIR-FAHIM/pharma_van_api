@@ -3,10 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
+use App\Models\ProductCreateErrorLog;
 use App\Models\ProductImage;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class ProductController extends Controller
@@ -46,6 +48,33 @@ class ProductController extends Controller
         }
         return round($finalSalePrice, 2);
     }
+
+    private function logProductCreateError(Request $request, \Throwable $e, string $level = 'error', ?array $requestData = null): void
+    {
+        try {
+            ProductCreateErrorLog::create([
+                'user_id' => $request->user()?->id ?? $request->input('user_id'),
+                'level' => $level,
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'url' => $request->fullUrl(),
+                'method' => $request->method(),
+                'ip_address' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+                'request_data' => json_encode($requestData ?? $request->all()),
+                'stack_trace' => $e->getTraceAsString(),
+                'created_at' => now(),
+            ]);
+        } catch (\Throwable $ignored) {
+            Log::error('Failed to write product create error log', [
+                'logging_error' => $ignored->getMessage(),
+                'url' => $request->fullUrl(),
+                'method' => $request->method(),
+            ]);
+        }
+    }
+
     /**
      * POST /products/create
      * Creates product (optionally with images array)
@@ -199,21 +228,40 @@ class ProductController extends Controller
                 'frequently_brought_selection_type' => $validated['frequently_brought_selection_type'] ?? 'product',
             ];
 
-            $product = Product::create($productData);
+            try {
+                $product = Product::create($productData);
 
-            if (!empty($productData['thumbnail_img'])) {
-                ProductImage::create([
-                    'product_id' => $product->id,
-                    'image' => $productData['thumbnail_img'],
-                    'is_primary' => true,
-                    'status' => 'active',
-                ]);
+                // Auto-generate SKU: p{id}v{vendor_id}
+                $product->sku = 'p' . $product->id . 'v' . ($product->vendor_id ?? '0');
+                $product->save();
+
+                if (!empty($productData['thumbnail_img'])) {
+                    ProductImage::create([
+                        'product_id' => $product->id,
+                        'image' => $productData['thumbnail_img'],
+                        'is_primary' => true,
+                        'status' => 'active',
+                    ]);
+                }
+            } catch (\Throwable $e) {
+                $this->logProductCreateError($request, $e, 'error', $productData);
+
+                return $this->failed('Something went wrong', ['error' => $e->getMessage()], 500);
             }
 
             return $this->success('Product created successfully', $product, 201);
         } catch (ValidationException $e) {
+            $this->logProductCreateError($request, $e, 'validation_error', [
+                'validation_errors' => $e->errors(),
+                'payload' => $request->all(),
+            ]);
+
             return $this->failed('Validation failed', $e->errors(), 422);
         } catch (\Throwable $e) {
+            $this->logProductCreateError($request, $e, 'error', [
+                'payload' => $request->all(),
+            ]);
+
             return $this->failed('Something went wrong', ['error' => $e->getMessage()], 500);
         }
     }
