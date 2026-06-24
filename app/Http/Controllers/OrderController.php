@@ -46,7 +46,7 @@ class OrderController extends Controller
 
     /**
      * POST /orders/checkout
-     * Body: user_id, customer_name, customer_phone, shipping_address, zone, district, area, lat, lon, note
+        * Body: user_id, is_outside_dhaka, customer_name, customer_phone, shipping_address, zone, district, area, lat, lon, note
      *
      * Converts ACTIVE cart -> order + order_items in ONE DB transaction
      * and splits the delivery charge across all shop orders.
@@ -56,6 +56,7 @@ class OrderController extends Controller
         try {
             $validated = $request->validate([
                 'user_id' => ['required', 'integer', 'exists:users,id'],
+                'is_outside_dhaka' => ['nullable', 'integer', 'in:0,1'],
 
                 'customer_name' => ['nullable', 'string', 'max:255'],
                 'customer_phone' => ['nullable', 'string', 'max:50'],
@@ -185,18 +186,7 @@ class OrderController extends Controller
 
     private function resolveBaseShippingFee(array $validated): float
     {
-        $location = collect([
-            $validated['district'] ?? null,
-            $validated['zone'] ?? null,
-            $validated['area'] ?? null,
-            $validated['shipping_address'] ?? null,
-        ])
-            ->filter()
-            ->implode(' ');
-
-        $location = Str::lower($location);
-
-        return Str::contains($location, 'dhaka') ? 60.0 : 120.0;
+        return ((int) ($validated['is_outside_dhaka'] ?? 0) === 1) ? 120.0 : 60.0;
     }
 
     private function resolveCartItemShopId(CartItem $cartItem): ?int
