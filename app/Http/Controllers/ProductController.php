@@ -232,7 +232,7 @@ class ProductController extends Controller
                 $product = Product::create($productData);
 
                 // Auto-generate SKU: p{id}v{vendor_id}
-                $product->sku = 'p' . $product->id . 'v' . ($product->vendor_id ?? '0');
+                $product->sku = 'p' . $product->id . 'v' . ($product->shop_id ?? '0');
                 $product->save();
 
                 if (!empty($productData['thumbnail_img'])) {
