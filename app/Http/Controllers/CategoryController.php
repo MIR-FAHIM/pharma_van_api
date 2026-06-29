@@ -214,7 +214,7 @@ public function getCategoryWithAllChildren()
 {
     try {
         $categories = Category::with('banner')
-            ->where('is_active', 1)
+            ->where('is_active', 1)->whereIn('category_id', [348, 349, 350, 351])
             ->orderByRaw('COALESCE(order_level, 999999) ASC')
             ->get();
 
