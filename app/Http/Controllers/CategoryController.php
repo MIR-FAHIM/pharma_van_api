@@ -81,9 +81,8 @@ class CategoryController extends Controller
             // Only show top-level featured categories (no children)
             $query = Category::query()
             ->with('banner')
-                ->where('parent_id', 0)
-                ->where('is_active', 1)
-                ->where('featured', 1);
+                ->where('parent_id', 348)
+                ->where('is_active', 1);
 
             $perPage = (int) $request->get('per_page', 20);
 
