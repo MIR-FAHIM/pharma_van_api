@@ -27,14 +27,4 @@ class LicenseImage extends Model
     {
         return $this->belongsTo(User::class, 'user_id');
     }
-
-    public function imageOne()
-    {
-        return $this->belongsTo(Upload::class, 'image1');
-    }
-
-    public function imageTwo()
-    {
-        return $this->belongsTo(Upload::class, 'image2');
-    }
 }

@@ -51,11 +51,11 @@ class UserController extends Controller
                 'city' => ['nullable', 'string', 'max:100'],
                 'postal_code' => ['nullable', 'string', 'max:20'],
                 'referral_code' => ['nullable', 'string', 'max:200'],
-                'image1' => ['nullable', 'string', 'max:255'],
+                'image1' => ['nullable', 'file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
               
             ]);
 
-            $user = DB::transaction(function () use ($validated) {
+            $user = DB::transaction(function () use ($request, $validated) {
                 $user = User::create([
                     'name' => $validated['name'] ?? null,
                     'pharmacy_name' => $validated['pharmacy_name'] ?? null,
@@ -73,10 +73,12 @@ class UserController extends Controller
                     'referral_code' => $validated['referral_code'] ?? null,
                 ]);
 
-                if (!empty($validated['image1'])) {
+                if ($request->hasFile('image1')) {
+                    $imagePath = $request->file('image1')->store("license_images/{$user->id}", 'public');
+
                     $licenseImage = LicenseImage::create([
                         'user_id' => $user->id,
-                        'image1' => $validated['image1'],
+                        'image1' => $imagePath,
                     ]);
 
                     $user->setRelation('licenseImage', $licenseImage);
