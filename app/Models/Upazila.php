@@ -5,23 +5,21 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class District extends Model
+class Upazila extends Model
 {
     use HasFactory;
 
     public $timestamps = false;
 
     protected $fillable = [
-        'division_id',
+        'district_id',
         'name',
         'bn_name',
-        'lat',
-        'lon',
         'url',
     ];
 
-    public function upazilas()
+    public function district()
     {
-        return $this->hasMany(Upazila::class, 'district_id');
+        return $this->belongsTo(District::class, 'district_id');
     }
 }
