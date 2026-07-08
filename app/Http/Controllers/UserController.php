@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\LicenseImage;
 use App\Models\User;
 use App\Models\Shops;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 
@@ -36,6 +38,7 @@ class UserController extends Controller
         try {
             $validated = $request->validate([
                 'name' => ['nullable', 'string', 'max:255'],
+                'pharmacy_name' => ['nullable', 'string', 'max:255'],
                 'email' => ['nullable', 'email', 'max:255', 'unique:users,email'],
                 'password' => ['required', 'string', 'min:6'],
                 'user_type' => ['nullable', Rule::in(['admin', 'seller', 'customer', 'delivery_boy'])],
@@ -47,24 +50,40 @@ class UserController extends Controller
                 'state' => ['nullable', 'string', 'max:100'],
                 'city' => ['nullable', 'string', 'max:100'],
                 'postal_code' => ['nullable', 'string', 'max:20'],
+                'referral_code' => ['nullable', 'string', 'max:200'],
+                'image1' => ['nullable', 'string', 'max:255'],
               
             ]);
 
-            $user = User::create([
-                'name' => $validated['name'] ?? null,
-                'email' => $validated['email'] ?? null,
-                'password' => Hash::make($validated['password']),
-                'user_type' => $validated['user_type'] ?? 'customer',
-                'phone' => $validated['phone'] ?? null,
-                'address' => $validated['address'] ?? null,
-                'avatar' => $validated['avatar'] ?? null,
-                'avatar_original' => $validated['avatar_original'] ?? null,
-                'country' => $validated['country'] ?? null,
-                'state' => $validated['state'] ?? null,
-                'city' => $validated['city'] ?? null,
-                'postal_code' => $validated['postal_code'] ?? null,
-         
-            ]);
+            $user = DB::transaction(function () use ($validated) {
+                $user = User::create([
+                    'name' => $validated['name'] ?? null,
+                    'pharmacy_name' => $validated['pharmacy_name'] ?? null,
+                    'email' => $validated['email'] ?? null,
+                    'password' => Hash::make($validated['password']),
+                    'user_type' => $validated['user_type'] ?? 'customer',
+                    'phone' => $validated['phone'] ?? null,
+                    'address' => $validated['address'] ?? null,
+                    'avatar' => $validated['avatar'] ?? null,
+                    'avatar_original' => $validated['avatar_original'] ?? null,
+                    'country' => $validated['country'] ?? null,
+                    'state' => $validated['state'] ?? null,
+                    'city' => $validated['city'] ?? null,
+                    'postal_code' => $validated['postal_code'] ?? null,
+                    'referral_code' => $validated['referral_code'] ?? null,
+                ]);
+
+                if (!empty($validated['image1'])) {
+                    $licenseImage = LicenseImage::create([
+                        'user_id' => $user->id,
+                        'image1' => $validated['image1'],
+                    ]);
+
+                    $user->setRelation('licenseImage', $licenseImage);
+                }
+
+                return $user;
+            });
 
             return $this->success('User created successfully', $user, 201);
         } catch (\Illuminate\Validation\ValidationException $e) {
